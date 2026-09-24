@@ -9,26 +9,39 @@
 
 import SwiftUI
 
+
 struct MyDuasView: View {
 
     // MARK: - State
 
+    // User's saved dua configuration
+    @State private var userDuas = MockData.userDuas
+
+    // Current daily card deck
     @State private var cards = DeckBuilder.build(
         userDuas: MockData.userDuas,
         duas: MockData.duas
     )
 
-    @State private var dragOffset: CGSize = .zero
-    @State private var isAnimatingSwipe = false
-
-    // MARK: - Properties
-
-    private let totalCards = DeckBuilder.build(
+    // Total number of cards for today's session
+    @State private var totalCards = DeckBuilder.build(
         userDuas: MockData.userDuas,
         duas: MockData.duas
     ).count
 
+    // Swipe state
+    @State private var dragOffset: CGSize = .zero
+    @State private var isAnimatingSwipe = false
+
+    // Configuration state
+    @State private var showingConfigure = false
+    @State private var hasPendingConfiguration = false
+
+    // MARK: - Constants
+
     private let swipeThreshold: CGFloat = 110
+
+    // MARK: - Computed Properties
 
     private var visibleCards: [DuaCardItem] {
         Array(cards.prefix(3))
@@ -36,6 +49,10 @@ struct MyDuasView: View {
 
     private var completedCount: Int {
         totalCards - cards.count
+    }
+
+    private var hasStartedSession: Bool {
+        completedCount > 0
     }
 
     // MARK: - Body
@@ -46,11 +63,13 @@ struct MyDuasView: View {
 
                 progressHeader
 
+                if hasPendingConfiguration {
+                    pendingConfigurationMessage
+                }
                 Spacer()
-
                 cardStack
                     .frame(height: 420)
-
+                
                 Spacer()
             }
             .padding(.horizontal, 24)
@@ -61,6 +80,36 @@ struct MyDuasView: View {
                     .ignoresSafeArea()
             )
             .navigationTitle("My Duas")
+
+            // Configuration button
+            .toolbar {
+                ToolbarItem(
+                    placement: .topBarTrailing
+                ) {
+                    Button {
+                        showingConfigure = true
+                    } label: {
+                        Image(
+                            systemName: "slider.horizontal.3"
+                        )
+                    }
+                    .disabled(isAnimatingSwipe)
+                    .accessibilityLabel(
+                        "Configure My Duas"
+                    )
+                }
+            }
+
+            // Configuration sheet
+            .sheet(
+                isPresented: $showingConfigure
+            ) {
+                ConfigureMyDuasView(
+                    userDuas: userDuas,
+                    duas: MockData.duas,
+                    onSave: applyConfiguration
+                )
+            }
         }
     }
 
@@ -73,10 +122,28 @@ struct MyDuasView: View {
 
             Spacer()
 
-            Text("\(completedCount) / \(totalCards)")
-                .foregroundStyle(.secondary)
-                .contentTransition(.numericText())
+            Text(
+                "\(completedCount) / \(totalCards)"
+            )
+            .foregroundStyle(.secondary)
+            .monospacedDigit()
+            .contentTransition(.numericText())
         }
+    }
+
+    // MARK: - Pending Configuration Message
+
+    private var pendingConfigurationMessage: some View {
+        Label(
+            "Configuration saved for your next session.",
+            systemImage: "info.circle"
+        )
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .frame(
+            maxWidth: .infinity,
+            alignment: .leading
+        )
     }
 
     // MARK: - Card Stack
@@ -88,7 +155,11 @@ struct MyDuasView: View {
 
                 if cards.isEmpty {
 
-                    completionView
+                    if totalCards > 0 {
+                        completionView
+                    } else {
+                        emptyDeckView
+                    }
 
                 } else {
 
@@ -99,7 +170,8 @@ struct MyDuasView: View {
                         stackedCard(
                             card,
                             depth: depth(for: card),
-                            exitDistance: geometry.size.width + 400
+                            exitDistance:
+                                geometry.size.width + 400
                         )
                     }
                 }
@@ -132,37 +204,47 @@ struct MyDuasView: View {
 
         let isTopCard = depth == 0
 
-        let scale = 1 - CGFloat(depth) * 0.04
-        let verticalOffset = CGFloat(depth) * 14
+        // Stack appearance
+        let scale: CGFloat =
+            1 - CGFloat(depth) * 0.04
 
+        let verticalOffset: CGFloat =
+            CGFloat(depth) * 14
+
+        // Swipe movement
         let xOffset: CGFloat = isTopCard
             ? dragOffset.width
             : 0
 
-        let yOffset: CGFloat = verticalOffset +
+        let yOffset: CGFloat =
+            verticalOffset +
             (isTopCard ? dragOffset.height : 0)
 
         let rotation: Double = isTopCard
             ? Double(dragOffset.width / 25)
             : 0
 
-        return DuaCardView(dua: card.dua)
-            .scaleEffect(scale)
-            .offset(
-                x: xOffset,
-                y: yOffset
+        return DuaCardView(
+            dua: card.dua
+        )
+        .scaleEffect(scale)
+        .offset(
+            x: xOffset,
+            y: yOffset
+        )
+        .rotationEffect(
+            .degrees(rotation)
+        )
+        .zIndex(
+            Double(3 - depth)
+        )
+        .gesture(
+            swipeGesture(
+                for: card.id,
+                exitDistance: exitDistance
             )
-            .rotationEffect(
-                .degrees(rotation)
-            )
-            .zIndex(Double(3 - depth))
-            .gesture(
-                swipeGesture(
-                    for: card.id,
-                    exitDistance: exitDistance
-                )
-            )
-            .allowsHitTesting(isTopCard)
+        )
+        .allowsHitTesting(isTopCard)
     }
 
     // MARK: - Swipe Gesture
@@ -172,82 +254,100 @@ struct MyDuasView: View {
         exitDistance: CGFloat
     ) -> some Gesture {
 
-        DragGesture(minimumDistance: 10)
+        DragGesture(
+            minimumDistance: 10
+        )
 
-            .onChanged { value in
+        .onChanged { value in
 
-                guard !isAnimatingSwipe,
-                      cards.first?.id == cardID
-                else {
-                    return
-                }
+            guard
+                !isAnimatingSwipe,
+                cards.first?.id == cardID
+            else {
+                return
+            }
 
-                let horizontal = value.translation.width
-                let vertical = value.translation.height
+            let horizontal =
+                value.translation.width
 
-                guard horizontal > 0,
-                      horizontal > abs(vertical)
-                else {
-                    return
-                }
+            let vertical =
+                value.translation.height
 
-                dragOffset = CGSize(
-                    width: horizontal,
-                    height: vertical * 0.15
+            // Only allow rightward swipes
+            guard
+                horizontal > 0,
+                horizontal > abs(vertical)
+            else {
+                return
+            }
+
+            dragOffset = CGSize(
+                width: horizontal,
+                height: vertical * 0.15
+            )
+        }
+
+        .onEnded { value in
+
+            guard
+                !isAnimatingSwipe,
+                cards.first?.id == cardID
+            else {
+                return
+            }
+
+            let horizontal =
+                value.translation.width
+
+            let vertical =
+                value.translation.height
+
+            if horizontal > swipeThreshold &&
+                horizontal > abs(vertical) {
+
+                // Successful swipe
+                completeTopCard(
+                    exitDistance: exitDistance,
+                    verticalDrag: vertical
                 )
-            }
 
-            .onEnded { value in
+            } else {
 
-                guard !isAnimatingSwipe,
-                      cards.first?.id == cardID
-                else {
-                    return
-                }
-
-                let horizontal = value.translation.width
-                let vertical = value.translation.height
-
-                if horizontal > swipeThreshold &&
-                    horizontal > abs(vertical) {
-
-                    completeTopCard(
-                        exitDistance: exitDistance,
-                        verticalDrag: vertical
+                // Unsuccessful swipe
+                // Return to original position
+                withAnimation(
+                    .spring(
+                        response: 0.35,
+                        dampingFraction: 0.7
                     )
-
-                } else {
-
-                    withAnimation(
-                        .spring(
-                            response: 0.35,
-                            dampingFraction: 0.7
-                        )
-                    ) {
-                        dragOffset = .zero
-                    }
+                ) {
+                    dragOffset = .zero
                 }
             }
+        }
     }
 
-    // MARK: - Complete Card
+    // MARK: - Complete Top Card
 
     private func completeTopCard(
         exitDistance: CGFloat,
         verticalDrag: CGFloat
     ) {
 
-        guard !cards.isEmpty,
-              !isAnimatingSwipe
+        guard
+            !cards.isEmpty,
+            !isAnimatingSwipe
         else {
             return
         }
 
         isAnimatingSwipe = true
 
+        // Animate current card offscreen
         withAnimation(
             .easeOut(duration: 0.25)
         ) {
+
             dragOffset = CGSize(
                 width: exitDistance,
                 height: verticalDrag * 0.2
@@ -255,19 +355,65 @@ struct MyDuasView: View {
 
         } completion: {
 
+            // Remove completed card
+            // and reveal the next card
             withAnimation(
                 .spring(
                     response: 0.38,
                     dampingFraction: 0.82
                 )
             ) {
+
                 cards.removeFirst()
                 dragOffset = .zero
 
             } completion: {
+
                 isAnimatingSwipe = false
             }
         }
+    }
+
+    // MARK: - Apply Configuration
+
+    private func applyConfiguration(
+        _ updatedDuas: [UserDua]
+    ) {
+
+        // Save the updated configuration
+        userDuas = updatedDuas
+
+        // Preserve today's deck if the
+        // user has already started reciting
+        guard
+            !hasStartedSession,
+            !isAnimatingSwipe
+        else {
+
+            hasPendingConfiguration = true
+            return
+        }
+
+        // Build a new deck using
+        // the updated configuration
+        let updatedDeck = DeckBuilder.build(
+            userDuas: updatedDuas,
+            duas: MockData.duas
+        )
+
+        // Update the deck and progress
+        withAnimation(
+            .spring(
+                response: 0.4,
+                dampingFraction: 0.8
+            )
+        ) {
+
+            cards = updatedDeck
+            totalCards = updatedDeck.count
+        }
+
+        hasPendingConfiguration = false
     }
 
     // MARK: - Completion View
@@ -276,20 +422,67 @@ struct MyDuasView: View {
 
         VStack(spacing: 16) {
 
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 64))
-                .foregroundStyle(.green)
+            Image(
+                systemName: "checkmark.circle.fill"
+            )
+            .font(
+                .system(size: 64)
+            )
+            .foregroundStyle(.green)
 
-            Text("Today's Duas Completed")
-                .font(.title2)
-                .fontWeight(.bold)
+            Text(
+                "Today's Duas Completed"
+            )
+            .font(.title2)
+            .fontWeight(.bold)
 
-            Text("\(totalCards) / \(totalCards)")
-                .foregroundStyle(.secondary)
+            Text(
+                "\(totalCards) / \(totalCards)"
+            )
+            .foregroundStyle(.secondary)
         }
-        .frame(maxWidth: .infinity)
+        .frame(
+            maxWidth: .infinity
+        )
+    }
+
+    // MARK: - Empty Deck View
+
+    private var emptyDeckView: some View {
+
+        VStack(spacing: 16) {
+
+            Image(
+                systemName: "square.stack"
+            )
+            .font(
+                .system(size: 54)
+            )
+            .foregroundStyle(.secondary)
+
+            Text("No Duas Added")
+                .font(.title2)
+                .fontWeight(.semibold)
+
+            Text(
+                "Add some duas to create your daily routine."
+            )
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
+
+            Button("Configure My Duas") {
+                showingConfigure = true
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .frame(
+            maxWidth: .infinity
+        )
     }
 }
+
+// MARK: - Preview
 
 #Preview {
     MyDuasView()
