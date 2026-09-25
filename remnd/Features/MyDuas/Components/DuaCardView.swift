@@ -39,6 +39,9 @@ struct DuaCardView: View {
         .frame(maxHeight: .infinity)
         .background(cardShape.fill(Color.white))
         .clipShape(cardShape)
+        .overlay {
+            cardShape.strokeBorder(Color.brandClrPrimary, lineWidth: 1.25)
+        }
         .shadow(
             color: .black.opacity(0.08),
             radius: 14,
