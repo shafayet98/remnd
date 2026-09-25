@@ -60,15 +60,12 @@ struct MyDuasView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 24) {
-
-                progressHeader
-
                 if hasPendingConfiguration {
                     pendingConfigurationMessage
                 }
                 Spacer()
                 cardStack
-                    .frame(height: 420)
+                    .frame(maxHeight: .infinity)
                 
                 Spacer()
             }
@@ -76,29 +73,9 @@ struct MyDuasView: View {
             .padding(.top, 24)
             .frame(maxWidth: .infinity)
             .background(
-                Color(.systemGroupedBackground)
+                Color.remndScreenBackground
                     .ignoresSafeArea()
             )
-            .navigationTitle("My Duas")
-
-            // Configuration button
-            .toolbar {
-                ToolbarItem(
-                    placement: .topBarTrailing
-                ) {
-                    Button {
-                        showingConfigure = true
-                    } label: {
-                        Image(
-                            systemName: "slider.horizontal.3"
-                        )
-                    }
-                    .disabled(isAnimatingSwipe)
-                    .accessibilityLabel(
-                        "Configure My Duas"
-                    )
-                }
-            }
 
             // Configuration sheet
             .sheet(
@@ -110,24 +87,6 @@ struct MyDuasView: View {
                     onSave: applyConfiguration
                 )
             }
-        }
-    }
-
-    // MARK: - Progress Header
-
-    private var progressHeader: some View {
-        HStack {
-            Text("Today's Progress")
-                .font(.headline)
-
-            Spacer()
-
-            Text(
-                "\(completedCount) / \(totalCards)"
-            )
-            .foregroundStyle(.secondary)
-            .monospacedDigit()
-            .contentTransition(.numericText())
         }
     }
 
@@ -224,8 +183,15 @@ struct MyDuasView: View {
             ? Double(dragOffset.width / 25)
             : 0
 
+        let countLeft = cards.reduce(into: 0) { count, remainingCard in
+            if remainingCard.userDuaID == card.userDuaID {
+                count += 1
+            }
+        }
+
         return DuaCardView(
-            dua: card.dua
+            dua: card.dua,
+            countLeft: countLeft
         )
         .scaleEffect(scale)
         .offset(
@@ -273,11 +239,10 @@ struct MyDuasView: View {
             let vertical =
                 value.translation.height
 
-            // Only allow rightward swipes
-            guard
-                horizontal > 0,
-                horizontal > abs(vertical)
-            else {
+            // Track rightward movement immediately so a diagonal drag
+            // doesn't cause the card to jump once it becomes horizontal.
+            guard horizontal > 0 else {
+                dragOffset = .zero
                 return
             }
 

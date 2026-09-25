@@ -13,4 +13,5 @@ struct Dua: Identifiable, Codable {
     let arabic: String
     let transliteration: String?
     let translation: String
+    let benefit: String
 }

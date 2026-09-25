@@ -9,16 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        ZStack {
-            Color(.appBackground)
-                .ignoresSafeArea()
-            VStack{
-                Image(.appLogo)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 120)
-            }
-        }
+        RootTabView()
     }
 }
 
