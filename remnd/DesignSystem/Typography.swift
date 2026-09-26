@@ -9,10 +9,10 @@ import SwiftUI
 
 extension Font {
     // Arabic — relativeTo: keeps Dynamic Type scaling working
-    static func arabic(_ size: CGFloat = 28) -> Font {
+    static func arabic(_ size: CGFloat = 17) -> Font {
         .custom("GeezaPro", size: size, relativeTo: .title2)
     }
-    static let arabicLarge = Font.custom("GeezaPro", size: 34, relativeTo: .title)
+    static let arabicLarge = Font.custom("GeezaPro", size: 17, relativeTo: .body)
 
     // UI
     static let duaTitle = Font.system(.headline, design: .rounded, weight: .semibold)

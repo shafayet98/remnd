@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct UserDua: Identifiable, Codable {
+struct UserDua: Identifiable, Codable, Equatable {
     let id: UUID
     let duaID: String
 

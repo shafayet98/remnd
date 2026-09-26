@@ -9,16 +9,17 @@ private enum AppTab: Hashable {
 
 struct RootTabView: View {
     @State private var selectedTab: AppTab = .home
+    @State private var userDuas = MockData.userDuas
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            PlaceholderTabView(title: "Discovery")
+            DiscoveryView(userDuas: $userDuas)
                 .tabItem {
                     Label("Discovery", systemImage: "safari")
                 }
                 .tag(AppTab.discovery)
 
-            MyDuasView()
+            MyDuasView(userDuas: $userDuas)
                 .tabItem {
                     Label("Home", systemImage: "house")
                 }

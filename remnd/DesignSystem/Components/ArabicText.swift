@@ -9,12 +9,14 @@ import SwiftUI
 
 struct ArabicText: View {
     let text: String
-    var size: CGFloat = 28
+    var size: CGFloat = 17
+    var lineLimit: Int? = nil
     
     var body: some View {
         Text(text)
             .font(.arabic(size))
             .lineSpacing(size * 0.5)
+            .lineLimit(lineLimit)
             .multilineTextAlignment(.trailing)
             .environment(\.layoutDirection, .rightToLeft)
             .foregroundStyle(Color.textPrimary)

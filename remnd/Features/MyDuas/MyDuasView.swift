@@ -15,19 +15,13 @@ struct MyDuasView: View {
     // MARK: - State
 
     // User's saved dua configuration
-    @State private var userDuas = MockData.userDuas
+    @Binding private var userDuas: [UserDua]
 
     // Current daily card deck
-    @State private var cards = DeckBuilder.build(
-        userDuas: MockData.userDuas,
-        duas: MockData.duas
-    )
+    @State private var cards: [DuaCardItem]
 
     // Total number of cards for today's session
-    @State private var totalCards = DeckBuilder.build(
-        userDuas: MockData.userDuas,
-        duas: MockData.duas
-    ).count
+    @State private var totalCards: Int
 
     // Swipe state
     @State private var dragOffset: CGSize = .zero
@@ -40,6 +34,17 @@ struct MyDuasView: View {
     // MARK: - Constants
 
     private let swipeThreshold: CGFloat = 110
+
+    init(userDuas: Binding<[UserDua]> = .constant(MockData.userDuas)) {
+        self._userDuas = userDuas
+
+        let initialDeck = DeckBuilder.build(
+            userDuas: userDuas.wrappedValue,
+            duas: MockData.duas
+        )
+        self._cards = State(initialValue: initialDeck)
+        self._totalCards = State(initialValue: initialDeck.count)
+    }
 
     // MARK: - Computed Properties
 
@@ -86,6 +91,9 @@ struct MyDuasView: View {
                     duas: MockData.duas,
                     onSave: applyConfiguration
                 )
+            }
+            .onChange(of: userDuas) { _, updatedDuas in
+                configurationDidChange(updatedDuas)
             }
         }
     }
@@ -344,10 +352,12 @@ struct MyDuasView: View {
     private func applyConfiguration(
         _ updatedDuas: [UserDua]
     ) {
-
-        // Save the updated configuration
         userDuas = updatedDuas
+    }
 
+    private func configurationDidChange(
+        _ updatedDuas: [UserDua]
+    ) {
         // Preserve today's deck if the
         // user has already started reciting
         guard
@@ -450,5 +460,5 @@ struct MyDuasView: View {
 // MARK: - Preview
 
 #Preview {
-    MyDuasView()
+    MyDuasView(userDuas: .constant(MockData.userDuas))
 }

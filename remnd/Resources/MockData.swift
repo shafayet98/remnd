@@ -47,6 +47,15 @@ enum MockData {
             transliteration: "Allahu Akbar",
             translation: "Allah is the Greatest",
             benefit: "A phrase of remembrance affirming the greatness of Allah."
+        ),
+
+        Dua(
+            id: "astaghfirullah",
+            title: "Astaghfirullah",
+            arabic: "أَسْتَغْفِرُ اللَّهَ",
+            transliteration: "Astaghfirullah",
+            translation: "I seek forgiveness from Allah",
+            benefit: "A remembrance expressing a request for Allah’s forgiveness."
         )
     ]
 
