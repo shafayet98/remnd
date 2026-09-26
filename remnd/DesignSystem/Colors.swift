@@ -13,7 +13,7 @@ extension Color{
     // Backgrounds
     static let bgbrandPrimary = Color(.brandColorBackgroundPrimary)
     static let bgbrandSecondary = Color(.brandColorBackgroundSecondary)
-    static let remndScreenBackground = Color.white
+    static let remndScreenBackground = Color(red: 255.0 / 255.0, green: 244.0 / 255.0, blue: 195.0 / 255.0)
 
     // Dua card tiles
     static let duaArabicTile = Color(red: 221.0 / 255.0, green: 231.0 / 255.0, blue: 199.0 / 255.0)

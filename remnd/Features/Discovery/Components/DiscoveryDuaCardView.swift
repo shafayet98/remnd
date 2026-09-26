@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct DiscoveryDuaCardView: View {
+    @Environment(\.appPalette) private var palette
+
     let dua: Dua
     let isAdded: Bool
     let onAdd: () -> Void
@@ -11,6 +13,7 @@ struct DiscoveryDuaCardView: View {
         VStack(alignment: .leading, spacing: 0) {
             Text(dua.title)
                 .font(.headline)
+                .foregroundStyle(palette.primaryText)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             sectionDivider
@@ -23,7 +26,7 @@ struct DiscoveryDuaCardView: View {
 
             Text(dua.translation)
                 .font(.system(size: 17))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(palette.meaningText)
                 .lineLimit(2)
                 .truncationMode(.tail)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -34,9 +37,10 @@ struct DiscoveryDuaCardView: View {
                 } label: {
                     Label("Details", systemImage: "doc.text")
                         .font(.subheadline.weight(.medium))
+                        .foregroundStyle(palette.smallButtonIcon)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
-                        .background(Color.duaBenefitTile, in: Capsule())
+                        .background(palette.smallButton, in: Capsule())
                 }
                 .buttonStyle(.plain)
 
@@ -45,17 +49,17 @@ struct DiscoveryDuaCardView: View {
             .padding(.top, 18)
         }
         .padding(20)
-        .background(cardShape.fill(.white))
+        .background(cardShape.fill(palette.card))
         .clipShape(cardShape)
         .overlay {
-            cardShape.strokeBorder(Color.brandClrPrimary, lineWidth: 1)
+            cardShape.strokeBorder(palette.cardBorder, lineWidth: 1)
         }
         .shadow(color: .black.opacity(0.06), radius: 10, y: 4)
     }
 
     private var sectionDivider: some View {
         Divider()
-            .overlay(Color.brandClrPrimary.opacity(0.18))
+            .overlay(palette.cardBorder.opacity(0.7))
             .padding(.vertical, 14)
     }
 
@@ -66,10 +70,11 @@ struct DiscoveryDuaCardView: View {
                 systemImage: isAdded ? "checkmark" : "plus"
             )
             .font(.subheadline.weight(.medium))
+            .foregroundStyle(isAdded ? palette.inactiveTab : palette.counterText)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
             .background(
-                isAdded ? Color.gray.opacity(0.12) : Color.duaCountTile,
+                isAdded ? palette.smallButton : palette.counter,
                 in: Capsule()
             )
         }
@@ -81,7 +86,8 @@ struct DiscoveryDuaCardView: View {
 #Preview {
     NavigationStack {
         ZStack {
-            Color.remndScreenBackground
+            Rectangle()
+                .fill(AppPalette(date: .now).background)
                 .ignoresSafeArea()
 
             DiscoveryDuaCardView(

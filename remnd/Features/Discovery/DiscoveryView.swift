@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct DiscoveryView: View {
+    @Environment(\.appPalette) private var palette
     @Binding var userDuas: [UserDua]
 
     var body: some View {
@@ -18,7 +19,12 @@ struct DiscoveryView: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
             }
-            .background(Color.remndScreenBackground.ignoresSafeArea())
+            .background {
+                Rectangle()
+                    .fill(palette.background)
+                    .ignoresSafeArea()
+            }
+            .toolbar(.hidden, for: .navigationBar)
         }
     }
 

@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct DuaCardView: View {
+    @Environment(\.appPalette) private var palette
+
     let dua: Dua
     let countLeft: Int
 
@@ -37,10 +39,10 @@ struct DuaCardView: View {
         }
         .frame(maxWidth: .infinity)
         .frame(maxHeight: .infinity)
-        .background(cardShape.fill(Color.white))
+        .background(cardShape.fill(palette.card))
         .clipShape(cardShape)
         .overlay {
-            cardShape.strokeBorder(Color.brandClrPrimary, lineWidth: 1.25)
+            cardShape.strokeBorder(palette.cardBorder, lineWidth: 1.25)
         }
         .shadow(
             color: .black.opacity(0.08),
@@ -55,49 +57,72 @@ struct DuaCardView: View {
     }
 
     private var frontFace: some View {
-        VStack(spacing: 16) {
-            scrollableTile(background: .duaArabicTile) {
-                ArabicText(text: dua.arabic, size: 17)
-            }
+        GeometryReader { geometry in
+            let topPadding: CGFloat = 16
+            let footerHeight: CGFloat = 40
+            let interItemSpacing: CGFloat = 40
+            let controlsHeight: CGFloat = 56
+            let tileHeight = max(
+                0,
+                (geometry.size.height - topPadding - footerHeight - interItemSpacing - controlsHeight) / 2
+            )
 
-            scrollableTile(background: .duaTransliterationTile) {
-                Text(dua.transliteration ?? "")
-                    .font(.system(size: 17))
-            }
-
-            HStack(spacing: 10) {
-                infoButton(
-                    systemImage: "book.closed",
-                    background: .duaBenefitTile,
-                    accessibilityLabel: "Show benefit"
-                ) {
-                    showInfoSection(.benefit)
+            VStack(spacing: 16) {
+                scrollableTile(background: palette.arabicTile) {
+                    ArabicText(text: dua.arabic, size: 17)
                 }
+                .frame(height: tileHeight)
 
-                Text(countLeft, format: .number)
-                    .font(.title2.weight(.semibold))
-                    .monospacedDigit()
-                    .frame(width: 56, height: 56)
-                    .background(Color.duaCountTile, in: Capsule())
-                    .accessibilityLabel("\(countLeft) repetitions remaining")
-
-                infoButton(
-                    systemImage: "text.quote",
-                    background: .duaTranslationTile,
-                    accessibilityLabel: "Show meaning"
-                ) {
-                    showInfoSection(.meaning)
+                scrollableTile(background: palette.transliterationTile) {
+                    Text(dua.transliteration ?? "")
+                        .font(.system(size: 17))
+                        .foregroundStyle(palette.transliterationText)
+                        .lineSpacing(2.5)
                 }
-            }
-            .frame(maxWidth: .infinity, alignment: .center)
+                .frame(height: tileHeight)
 
-            Label("Swipe right to complete", systemImage: "arrow.right")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-                .frame(maxWidth: .infinity)
-                .frame(height: 32)
+                HStack(spacing: 10) {
+                    infoButton(
+                        systemImage: "book.closed",
+                        background: palette.smallButton,
+                        accessibilityLabel: "Show benefit"
+                    ) {
+                        showInfoSection(.benefit)
+                    }
+
+                    Text(countLeft, format: .number)
+                        .font(.title2.weight(.semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(palette.counterText)
+                        .frame(width: 56, height: 56)
+                        .background(palette.counter, in: Capsule())
+                        .accessibilityLabel("\(countLeft) repetitions remaining")
+
+                    infoButton(
+                        systemImage: "text.quote",
+                        background: palette.smallButton,
+                        accessibilityLabel: "Show meaning"
+                    ) {
+                        showInfoSection(.meaning)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .center)
+                .frame(height: controlsHeight)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, topPadding)
+            .padding(.bottom, footerHeight)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .overlay(alignment: .bottom) {
+                Label("Swipe right to complete", systemImage: "arrow.right")
+                    .font(.caption2)
+                    .foregroundStyle(palette.hintText)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 24)
+                    .padding(.bottom, 8)
+            }
         }
-        .padding(16)
     }
 
     private var benefitFace: some View {
@@ -109,7 +134,7 @@ struct DuaCardView: View {
                             title: "Benefit",
                             systemImage: "book.closed",
                             text: dua.benefit,
-                            background: .duaBenefitTile
+                            background: palette.smallButton
                         )
                         .id(InfoSection.benefit)
 
@@ -117,7 +142,7 @@ struct DuaCardView: View {
                             title: "Meaning",
                             systemImage: "text.quote",
                             text: dua.translation,
-                            background: .duaTranslationTile
+                            background: palette.meaningTile
                         )
                         .id(InfoSection.meaning)
                     }
@@ -140,7 +165,8 @@ struct DuaCardView: View {
                 Image(systemName: "arrow.uturn.backward")
                     .font(.title3.weight(.medium))
                     .frame(width: 56, height: 56)
-                    .background(Color.duaBenefitTile, in: Capsule())
+                    .background(palette.smallButton, in: Capsule())
+                    .foregroundStyle(palette.smallButtonIcon)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Flip back to dua")
@@ -157,6 +183,7 @@ struct DuaCardView: View {
         Button(action: action) {
             Image(systemName: systemImage)
                 .font(.title3.weight(.medium))
+                .foregroundStyle(palette.smallButtonIcon)
                 .frame(width: 56, height: 56)
                 .background(background, in: Capsule())
                 .contentShape(Capsule())
@@ -181,9 +208,11 @@ struct DuaCardView: View {
         VStack(alignment: .leading, spacing: 12) {
             Label(title, systemImage: systemImage)
                 .font(.headline)
+                .foregroundStyle(palette.primaryText)
 
             Text(text)
                 .font(.body)
+                .foregroundStyle(palette.meaningText)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -211,7 +240,8 @@ struct DuaCardView: View {
 
 #Preview {
     ZStack {
-        Color.remndScreenBackground
+        Rectangle()
+            .fill(AppPalette(date: .now).background)
             .ignoresSafeArea()
 
         DuaCardView(

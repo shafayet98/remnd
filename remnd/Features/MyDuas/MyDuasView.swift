@@ -12,6 +12,8 @@ import SwiftUI
 
 struct MyDuasView: View {
 
+    @Environment(\.appPalette) private var palette
+
     // MARK: - State
 
     // User's saved dua configuration
@@ -64,21 +66,19 @@ struct MyDuasView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 24) {
+            VStack(spacing: 12) {
                 if hasPendingConfiguration {
                     pendingConfigurationMessage
                 }
-                Spacer()
                 cardStack
                     .frame(maxHeight: .infinity)
-                
-                Spacer()
             }
             .padding(.horizontal, 24)
-            .padding(.top, 24)
-            .frame(maxWidth: .infinity)
+            .padding(.vertical, 18)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(
-                Color.remndScreenBackground
+                Rectangle()
+                    .fill(palette.background)
                     .ignoresSafeArea()
             )
 
@@ -95,6 +95,7 @@ struct MyDuasView: View {
             .onChange(of: userDuas) { _, updatedDuas in
                 configurationDidChange(updatedDuas)
             }
+            .toolbar(.hidden, for: .navigationBar)
         }
     }
 
@@ -403,18 +404,19 @@ struct MyDuasView: View {
             .font(
                 .system(size: 64)
             )
-            .foregroundStyle(.green)
+            .foregroundStyle(palette.activeTab)
 
             Text(
                 "Today's Duas Completed"
             )
             .font(.title2)
             .fontWeight(.bold)
+            .foregroundStyle(palette.primaryText)
 
             Text(
                 "\(totalCards) / \(totalCards)"
             )
-            .foregroundStyle(.secondary)
+            .foregroundStyle(palette.inactiveTab)
         }
         .frame(
             maxWidth: .infinity
@@ -433,17 +435,18 @@ struct MyDuasView: View {
             .font(
                 .system(size: 54)
             )
-            .foregroundStyle(.secondary)
+            .foregroundStyle(palette.inactiveTab)
 
             Text("No Duas Added")
                 .font(.title2)
                 .fontWeight(.semibold)
+                .foregroundStyle(palette.primaryText)
 
             Text(
                 "Add some duas to create your daily routine."
             )
             .font(.subheadline)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(palette.inactiveTab)
             .multilineTextAlignment(.center)
 
             Button("Configure My Duas") {

@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct ArabicText: View {
+    @Environment(\.appPalette) private var palette
+
     let text: String
     var size: CGFloat = 17
     var lineLimit: Int? = nil
@@ -19,7 +21,7 @@ struct ArabicText: View {
             .lineLimit(lineLimit)
             .multilineTextAlignment(.trailing)
             .environment(\.layoutDirection, .rightToLeft)
-            .foregroundStyle(Color.textPrimary)
+            .foregroundStyle(palette.arabicText)
     }
 }
 
