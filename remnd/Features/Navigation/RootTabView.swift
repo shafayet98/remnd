@@ -18,8 +18,16 @@ private enum AppTab: String, CaseIterable, Hashable {
 
 struct RootTabView: View {
     @State private var selectedTab: AppTab = .home
-    @State private var userDuas = MockData.userDuas
+    @StateObject private var store = AppDataStore()
+    @Environment(\.scenePhase) private var scenePhase
     @Namespace private var tabSelectionAnimation
+
+    private var userDuasBinding: Binding<[UserDua]> {
+        Binding(
+            get: { store.userDuas },
+            set: { store.setUserDuas($0) }
+        )
+    }
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 30)) { timeline in
@@ -30,7 +38,7 @@ struct RootTabView: View {
                     .ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    tabContent(palette: palette)
+                    tabContent(now: timeline.date)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                     tabBar(palette: palette)
@@ -38,27 +46,34 @@ struct RootTabView: View {
             }
             .environment(\.appPalette, palette)
             .environment(\.colorScheme, palette.isDaytime ? .light : .dark)
+            .onAppear { store.refreshForToday(at: timeline.date) }
+            .onChange(of: AppDataStore.dayKey(for: timeline.date)) { _, _ in
+                store.refreshForToday(at: timeline.date)
+            }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active { store.refreshForToday() }
+            }
         }
     }
 
-    private func tabContent(palette: AppPalette) -> some View {
+    private func tabContent(now: Date) -> some View {
         ZStack {
-            DiscoveryView(userDuas: $userDuas)
+            DiscoveryView(userDuas: userDuasBinding)
                 .opacity(selectedTab == .discovery ? 1 : 0)
                 .allowsHitTesting(selectedTab == .discovery)
                 .accessibilityHidden(selectedTab != .discovery)
 
-            MyDuasView(userDuas: $userDuas)
+            MyDuasView(store: store)
                 .opacity(selectedTab == .home ? 1 : 0)
                 .allowsHitTesting(selectedTab == .home)
                 .accessibilityHidden(selectedTab != .home)
 
-            PlaceholderTabView(title: "Profile", palette: palette)
+            ProfileView(store: store, now: now)
                 .opacity(selectedTab == .profile ? 1 : 0)
                 .allowsHitTesting(selectedTab == .profile)
                 .accessibilityHidden(selectedTab != .profile)
 
-            SettingsView(userDuas: $userDuas)
+            SettingsView(userDuas: userDuasBinding, duas: store.allDuas)
                 .opacity(selectedTab == .settings ? 1 : 0)
                 .allowsHitTesting(selectedTab == .settings)
                 .accessibilityHidden(selectedTab != .settings)
@@ -121,22 +136,6 @@ struct RootTabView: View {
             Rectangle()
                 .fill(palette.tabBarSurround)
                 .ignoresSafeArea(edges: .bottom)
-        }
-    }
-}
-
-private struct PlaceholderTabView: View {
-    let title: String
-    let palette: AppPalette
-
-    var body: some View {
-        NavigationStack {
-            Rectangle()
-                .fill(palette.background)
-                .ignoresSafeArea()
-                .navigationTitle(title)
-                .toolbarBackground(palette.navigationBar, for: .navigationBar)
-                .toolbarBackground(.visible, for: .navigationBar)
         }
     }
 }

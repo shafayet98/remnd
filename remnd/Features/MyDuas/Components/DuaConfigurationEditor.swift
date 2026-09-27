@@ -10,7 +10,6 @@ struct DuaConfigurationEditor: View {
     var showsInlineEditButton = false
     var showsActionButtons = false
     var saveIsEnabled: Binding<Bool>?
-    var onReset: (() -> Void)?
     var onSave: (() -> Void)?
 
     private var totalCards: Int {
@@ -75,28 +74,18 @@ struct DuaConfigurationEditor: View {
 
             Section {
                 if showsActionButtons {
-                    VStack(alignment: .leading, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 12) {
                         Text("Set the number of times you want to recite each dua.")
                             .font(.footnote)
                             .foregroundStyle(palette.hintText)
-                            .padding(.horizontal, 14)
+                            .padding(.horizontal, 12)
 
                         totalCardsRow
 
-                        HStack(spacing: 10) {
-                            actionButton(
-                                title: "Reset",
-                                isEnabled: true,
-                                action: onReset
-                            )
-                            actionButton(
-                                title: "Save",
-                                isEnabled: hasUnsavedChanges,
-                                action: onSave
-                            )
-                        }
+                        saveButton
                     }
-                    .padding(.vertical, 4)
+                    .padding(.vertical, 10)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
                 } else {
@@ -137,6 +126,7 @@ struct DuaConfigurationEditor: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 14)
+        .frame(maxWidth: .infinity)
         .background(palette.card, in: Capsule())
     }
 
@@ -146,25 +136,21 @@ struct DuaConfigurationEditor: View {
             .joined(separator: "|")
     }
 
-    private func actionButton(
-        title: String,
-        isEnabled: Bool,
-        action: (() -> Void)?
-    ) -> some View {
+    private var saveButton: some View {
         Button {
-            action?()
+            onSave?()
         } label: {
-            Text(title)
+            Text("Save")
                 .font(.title3.weight(.bold))
-                .frame(minWidth: 176, minHeight: 62)
-                .foregroundStyle(isEnabled ? palette.counterText : Color.gray)
+                .frame(maxWidth: .infinity, minHeight: 62)
+                .foregroundStyle(hasUnsavedChanges ? palette.counterText : Color.gray)
                 .background(
-                    isEnabled ? palette.activeTab : Color.gray.opacity(0.24),
+                    hasUnsavedChanges ? palette.activeTab : Color.gray.opacity(0.24),
                     in: Capsule()
                 )
         }
         .buttonStyle(.plain)
-        .disabled(!isEnabled || action == nil)
+        .disabled(!hasUnsavedChanges || onSave == nil)
     }
 }
 #Preview("Dua Repetitions") {

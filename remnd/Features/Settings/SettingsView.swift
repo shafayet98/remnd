@@ -3,15 +3,16 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(\.appPalette) private var palette
     @Binding private var userDuas: [UserDua]
+    let duas: [Dua]
 
     @State private var draftUserDuas: [UserDua]
     @State private var savedUserDuas: [UserDua]
     @State private var hasUnsavedChanges = false
     @State private var showingConfirmation = false
-    @State private var confirmationMessage = ""
 
-    init(userDuas: Binding<[UserDua]>) {
+    init(userDuas: Binding<[UserDua]>, duas: [Dua] = MockData.duas) {
         self._userDuas = userDuas
+        self.duas = duas
 
         let orderedUserDuas = userDuas.wrappedValue.sorted {
             $0.position < $1.position
@@ -34,13 +35,12 @@ struct SettingsView: View {
         NavigationStack {
             DuaConfigurationEditor(
                 userDuas: $draftUserDuas,
-                duas: MockData.duas,
+                duas: duas,
                 sectionTitle: "Dua Repetitions",
                 baselineUserDuas: savedUserDuas,
                 showsInlineEditButton: true,
                 showsActionButtons: true,
                 saveIsEnabled: $hasUnsavedChanges,
-                onReset: resetDraft,
                 onSave: saveConfiguration
             )
             .scrollContentBackground(.hidden)
@@ -59,19 +59,12 @@ struct SettingsView: View {
                 savedUserDuas = current
                 hasUnsavedChanges = false
             }
-            .alert("Configuration Updated", isPresented: $showingConfirmation) {
+            .alert("Settings Saved", isPresented: $showingConfirmation) {
                 Button("OK", role: .cancel) {}
             } message: {
-                Text(confirmationMessage)
+                Text("Your settings have been saved.")
             }
         }
-    }
-
-    private func resetDraft() {
-        draftUserDuas = savedUserDuas
-        hasUnsavedChanges = false
-        confirmationMessage = "Your changes were reset to the last saved settings."
-        showingConfirmation = true
     }
 
     private func saveConfiguration() {
@@ -84,7 +77,6 @@ struct SettingsView: View {
         savedUserDuas = draftUserDuas
         userDuas = draftUserDuas
         hasUnsavedChanges = false
-        confirmationMessage = "Your settings have been saved."
         showingConfirmation = true
     }
 }

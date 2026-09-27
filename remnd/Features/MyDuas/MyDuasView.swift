@@ -13,17 +13,9 @@ import SwiftUI
 struct MyDuasView: View {
 
     @Environment(\.appPalette) private var palette
+    @ObservedObject var store: AppDataStore
 
     // MARK: - State
-
-    // User's saved dua configuration
-    @Binding private var userDuas: [UserDua]
-
-    // Current daily card deck
-    @State private var cards: [DuaCardItem]
-
-    // Total number of cards for today's session
-    @State private var totalCards: Int
 
     // Swipe state
     @State private var dragOffset: CGSize = .zero
@@ -31,24 +23,16 @@ struct MyDuasView: View {
 
     // Configuration state
     @State private var showingConfigure = false
-    @State private var hasPendingConfiguration = false
 
     // MARK: - Constants
 
     private let swipeThreshold: CGFloat = 110
 
-    init(userDuas: Binding<[UserDua]> = .constant(MockData.userDuas)) {
-        self._userDuas = userDuas
-
-        let initialDeck = DeckBuilder.build(
-            userDuas: userDuas.wrappedValue,
-            duas: MockData.duas
-        )
-        self._cards = State(initialValue: initialDeck)
-        self._totalCards = State(initialValue: initialDeck.count)
-    }
-
     // MARK: - Computed Properties
+
+    private var cards: [DuaCardItem] { store.remainingCards }
+
+    private var totalCards: Int { store.totalCards }
 
     private var visibleCards: [DuaCardItem] {
         Array(cards.prefix(3))
@@ -58,16 +42,12 @@ struct MyDuasView: View {
         totalCards - cards.count
     }
 
-    private var hasStartedSession: Bool {
-        completedCount > 0
-    }
-
     // MARK: - Body
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 12) {
-                if hasPendingConfiguration {
+                if store.hasPendingConfiguration {
                     pendingConfigurationMessage
                 }
                 cardStack
@@ -87,13 +67,10 @@ struct MyDuasView: View {
                 isPresented: $showingConfigure
             ) {
                 ConfigureMyDuasView(
-                    userDuas: userDuas,
-                    duas: MockData.duas,
-                    onSave: applyConfiguration
+                    userDuas: store.userDuas,
+                    duas: store.allDuas,
+                    onSave: store.setUserDuas
                 )
-            }
-            .onChange(of: userDuas) { _, updatedDuas in
-                configurationDidChange(updatedDuas)
             }
             .toolbar(.hidden, for: .navigationBar)
         }
@@ -316,6 +293,7 @@ struct MyDuasView: View {
         }
 
         isAnimatingSwipe = true
+        let completedAt = Date()
 
         // Animate current card offscreen
         withAnimation(
@@ -338,7 +316,7 @@ struct MyDuasView: View {
                 )
             ) {
 
-                cards.removeFirst()
+                store.completeCard(at: completedAt)
                 dragOffset = .zero
 
             } completion: {
@@ -346,50 +324,6 @@ struct MyDuasView: View {
                 isAnimatingSwipe = false
             }
         }
-    }
-
-    // MARK: - Apply Configuration
-
-    private func applyConfiguration(
-        _ updatedDuas: [UserDua]
-    ) {
-        userDuas = updatedDuas
-    }
-
-    private func configurationDidChange(
-        _ updatedDuas: [UserDua]
-    ) {
-        // Preserve today's deck if the
-        // user has already started reciting
-        guard
-            !hasStartedSession,
-            !isAnimatingSwipe
-        else {
-
-            hasPendingConfiguration = true
-            return
-        }
-
-        // Build a new deck using
-        // the updated configuration
-        let updatedDeck = DeckBuilder.build(
-            userDuas: updatedDuas,
-            duas: MockData.duas
-        )
-
-        // Update the deck and progress
-        withAnimation(
-            .spring(
-                response: 0.4,
-                dampingFraction: 0.8
-            )
-        ) {
-
-            cards = updatedDeck
-            totalCards = updatedDeck.count
-        }
-
-        hasPendingConfiguration = false
     }
 
     // MARK: - Completion View
@@ -463,5 +397,5 @@ struct MyDuasView: View {
 // MARK: - Preview
 
 #Preview {
-    MyDuasView(userDuas: .constant(MockData.userDuas))
+    MyDuasView(store: AppDataStore(defaults: nil))
 }
