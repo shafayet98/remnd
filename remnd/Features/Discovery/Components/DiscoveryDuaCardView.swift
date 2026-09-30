@@ -40,7 +40,7 @@ struct DiscoveryDuaCardView: View {
                         .foregroundStyle(palette.smallButtonIcon)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
-                        .background(palette.smallButton, in: Capsule())
+                        .appGlassBackground(palette.smallButton, in: Capsule(), palette: palette)
                 }
                 .buttonStyle(.plain)
 
@@ -49,7 +49,7 @@ struct DiscoveryDuaCardView: View {
             .padding(.top, 18)
         }
         .padding(20)
-        .background(cardShape.fill(palette.card))
+        .appGlassBackground(palette.card, in: cardShape, palette: palette)
         .clipShape(cardShape)
         .overlay {
             cardShape.strokeBorder(palette.cardBorder, lineWidth: 1)
@@ -73,9 +73,10 @@ struct DiscoveryDuaCardView: View {
             .foregroundStyle(isAdded ? palette.inactiveTab : palette.counterText)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
-            .background(
+            .appGlassBackground(
                 isAdded ? palette.smallButton : palette.counter,
-                in: Capsule()
+                in: Capsule(),
+                palette: palette
             )
         }
         .buttonStyle(.plain)

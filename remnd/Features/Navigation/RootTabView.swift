@@ -18,9 +18,27 @@ private enum AppTab: String, CaseIterable, Hashable {
 
 struct RootTabView: View {
     @State private var selectedTab: AppTab = .home
-    @StateObject private var store = AppDataStore()
+    @StateObject private var store: AppDataStore
     @Environment(\.scenePhase) private var scenePhase
     @Namespace private var tabSelectionAnimation
+    #if DEBUG
+    @AppStorage("remnd.debugPreviewNightTheme") private var previewNightTheme = false
+    #endif
+    private let suggestedUsername: String?
+    private let onSignOut: (() -> Void)?
+    private let signOutTitle: String
+
+    init(
+        appleUserID: String? = nil,
+        suggestedUsername: String? = nil,
+        onSignOut: (() -> Void)? = nil,
+        signOutTitle: String = "Sign Out"
+    ) {
+        _store = StateObject(wrappedValue: AppDataStore(appleUserID: appleUserID))
+        self.suggestedUsername = suggestedUsername
+        self.onSignOut = onSignOut
+        self.signOutTitle = signOutTitle
+    }
 
     private var userDuasBinding: Binding<[UserDua]> {
         Binding(
@@ -31,7 +49,7 @@ struct RootTabView: View {
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 30)) { timeline in
-            let palette = AppPalette(date: timeline.date)
+            let palette = palette(for: timeline.date)
             ZStack {
                 Rectangle()
                     .fill(palette.background)
@@ -47,6 +65,12 @@ struct RootTabView: View {
             .environment(\.appPalette, palette)
             .environment(\.colorScheme, palette.isDaytime ? .light : .dark)
             .onAppear { store.refreshForToday(at: timeline.date) }
+            .onAppear {
+                if let suggestedUsername,
+                   store.profile.username == "Your Name" {
+                    store.updateProfile(username: suggestedUsername, bio: store.profile.bio)
+                }
+            }
             .onChange(of: AppDataStore.dayKey(for: timeline.date)) { _, _ in
                 store.refreshForToday(at: timeline.date)
             }
@@ -54,6 +78,14 @@ struct RootTabView: View {
                 if phase == .active { store.refreshForToday() }
             }
         }
+    }
+
+    private func palette(for date: Date) -> AppPalette {
+        #if DEBUG
+        AppPalette(date: date, forceNight: previewNightTheme)
+        #else
+        AppPalette(date: date)
+        #endif
     }
 
     private func tabContent(now: Date) -> some View {
@@ -68,7 +100,7 @@ struct RootTabView: View {
                 .allowsHitTesting(selectedTab == .home)
                 .accessibilityHidden(selectedTab != .home)
 
-            ProfileView(store: store, now: now)
+            ProfileView(store: store, now: now, onSignOut: onSignOut, signOutTitle: signOutTitle)
                 .opacity(selectedTab == .profile ? 1 : 0)
                 .allowsHitTesting(selectedTab == .profile)
                 .accessibilityHidden(selectedTab != .profile)
@@ -104,13 +136,17 @@ struct RootTabView: View {
                             Capsule()
                                 .fill(.ultraThinMaterial)
                                 .overlay {
-                                    Capsule()
-                                        .fill(palette.smallButton.opacity(0.68))
+                                    if palette.isDaytime {
+                                        Capsule()
+                                            .fill(palette.smallButton.opacity(0.68))
+                                    }
                                 }
                                 .overlay {
                                     Capsule()
                                         .strokeBorder(
-                                            palette.card.opacity(palette.isDaytime ? 0.6 : 0.12),
+                                            palette.isDaytime
+                                                ? palette.card.opacity(0.6)
+                                                : palette.cardBorder.opacity(0.4),
                                             lineWidth: 1
                                         )
                                 }
@@ -128,7 +164,12 @@ struct RootTabView: View {
             }
         }
         .padding(8)
-        .background(palette.navigationBar, in: Capsule())
+        .appGlassBackground(palette.navigationBar, in: Capsule(), palette: palette)
+        .overlay {
+            if !palette.isDaytime {
+                Capsule().strokeBorder(palette.cardBorder, lineWidth: 1)
+            }
+        }
         .padding(.horizontal, 18)
         .padding(.top, 6)
         .padding(.bottom, 4)

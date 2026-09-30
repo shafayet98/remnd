@@ -31,6 +31,8 @@ struct ProfileView: View {
     @Environment(\.appPalette) private var palette
     @ObservedObject var store: AppDataStore
     var now: Date = .now
+    var onSignOut: (() -> Void)? = nil
+    var signOutTitle: String = "Sign Out"
 
     @State private var showingProfileEditor = false
     @State private var showingColorPalette = false
@@ -51,6 +53,15 @@ struct ProfileView: View {
 
                     if !store.pendingSubmissions.isEmpty {
                         pendingReviewCard
+                    }
+
+                    if let onSignOut {
+                        Button(signOutTitle, action: onSignOut)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(palette.smallButtonIcon)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .appGlassBackground(palette.smallButton, in: Capsule(), palette: palette)
                     }
                 }
                 .padding(.horizontal, 20)
@@ -78,7 +89,7 @@ struct ProfileView: View {
                             .font(.caption)
                             .foregroundStyle(palette.smallButtonIcon)
                             .padding(7)
-                            .background(palette.smallButton, in: Circle())
+                            .appGlassBackground(palette.smallButton, in: Circle(), palette: palette)
                     }
             }
             .buttonStyle(.plain)
@@ -166,7 +177,11 @@ struct ProfileView: View {
 
                         ZStack(alignment: .bottom) {
                             RoundedRectangle(cornerRadius: 7)
-                                .fill(palette.smallButton)
+                                .fill(
+                                    palette.isDaytime
+                                        ? palette.smallButton
+                                        : palette.inactiveTab.opacity(0.3)
+                                )
                                 .frame(height: 92)
                             RoundedRectangle(cornerRadius: 7)
                                 .fill(palette.activeTab)
@@ -207,7 +222,9 @@ struct ProfileView: View {
                     } else if status == .missed {
                         palette.hintText.opacity(0.55)
                     } else {
-                        palette.smallButton
+                        palette.isDaytime
+                            ? palette.smallButton
+                            : palette.inactiveTab.opacity(0.3)
                     }
 
                     Text(day.formatted(.dateTime.day()))
@@ -313,7 +330,7 @@ struct ProfileView: View {
         }
         .padding(24)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(palette.card)
+        .background(palette.background)
         .presentationDetents([.height(290)])
     }
 
@@ -363,7 +380,11 @@ private struct ProfileCardStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
             .frame(maxWidth: .infinity)
-            .background(palette.card, in: RoundedRectangle(cornerRadius: 24))
+            .appGlassBackground(
+                palette.card,
+                in: RoundedRectangle(cornerRadius: 24),
+                palette: palette
+            )
             .overlay {
                 RoundedRectangle(cornerRadius: 24)
                     .strokeBorder(palette.cardBorder, lineWidth: 1)

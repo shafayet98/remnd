@@ -111,4 +111,39 @@ struct remndTests {
         #expect(store.completedCount == 0)
         #expect(!store.hasPendingConfiguration)
     }
+
+    @Test func appleUsersHaveSeparateLocalDataAndLegacyDataMovesOnce() {
+        let suite = "remnd.tests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let day = localDate(27, hour: 10)
+
+        let legacy = AppDataStore(defaults: defaults, now: day, calendar: calendar)
+        legacy.updateProfile(username: "Existing user", bio: "Saved locally")
+
+        let first = AppDataStore(
+            appleUserID: "apple-user-a",
+            defaults: defaults,
+            now: day,
+            calendar: calendar
+        )
+        #expect(first.profile.username == "Existing user")
+        first.updateProfile(username: "First account", bio: "Private")
+
+        let second = AppDataStore(
+            appleUserID: "apple-user-b",
+            defaults: defaults,
+            now: day,
+            calendar: calendar
+        )
+        #expect(second.profile.username == "Your Name")
+
+        let reopenedFirst = AppDataStore(
+            appleUserID: "apple-user-a",
+            defaults: defaults,
+            now: day,
+            calendar: calendar
+        )
+        #expect(reopenedFirst.profile.username == "First account")
+    }
 }

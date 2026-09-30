@@ -3,10 +3,14 @@ import SwiftUI
 struct AppPalette {
     let isDaytime: Bool
 
-    init(date: Date, calendar: Calendar = .autoupdatingCurrent) {
+    init(
+        date: Date,
+        calendar: Calendar = .autoupdatingCurrent,
+        forceNight: Bool = false
+    ) {
         let time = calendar.dateComponents([.hour, .minute], from: date)
         let minutesSinceMidnight = (time.hour ?? 0) * 60 + (time.minute ?? 0)
-        isDaytime = (5 * 60...17 * 60).contains(minutesSinceMidnight)
+        isDaytime = !forceNight && (5 * 60...17 * 60).contains(minutesSinceMidnight)
     }
 
     private static func color(_ hex: UInt32) -> Color {
@@ -27,31 +31,37 @@ struct AppPalette {
                 )
             )
         } else {
-            AnyShapeStyle(Self.color(0x0F1512))
+            AnyShapeStyle(
+                LinearGradient(
+                    colors: [Self.color(0x0C0C0F), Self.color(0x1C1B22), Self.color(0x3A3326)],
+                    startPoint: UnitPoint(x: 0.15, y: 0),
+                    endPoint: UnitPoint(x: 0.85, y: 1)
+                )
+            )
         }
     }
 
-    var card: Color { isDaytime ? Self.color(0xFFFFFF) : Self.color(0x161E1A) }
-    var cardBorder: Color { isDaytime ? Self.color(0xF4D9CF) : Self.color(0x26332C) }
-    var hintText: Color { isDaytime ? Self.color(0xA07D78) : Self.color(0x6F8278) }
-    var primaryText: Color { isDaytime ? Self.color(0x38242B) : Self.color(0xE9F5EC) }
+    var card: Color { isDaytime ? Self.color(0xFFFFFF) : .clear }
+    var cardBorder: Color { isDaytime ? Self.color(0xF4D9CF) : .white.opacity(0.55) }
+    var hintText: Color { isDaytime ? Self.color(0xA07D78) : Self.color(0xA8A08C) }
+    var primaryText: Color { isDaytime ? Self.color(0x38242B) : Self.color(0xFAF6EA) }
 
-    var arabicTile: Color { isDaytime ? Self.color(0xFFE9DF) : Self.color(0x1F3329) }
-    var arabicText: Color { isDaytime ? Self.color(0x5A1F2E) : Self.color(0xE9F5EC) }
-    var transliterationTile: Color { isDaytime ? Self.color(0xF5EEFF) : Self.color(0x1B2420) }
-    var transliterationText: Color { isDaytime ? Self.color(0x3E2F63) : Self.color(0xB9C7BF) }
-    var meaningTile: Color { isDaytime ? Self.color(0xF5EEFF) : Self.color(0x1B2420) }
-    var meaningText: Color { isDaytime ? Self.color(0x3E2F63) : Self.color(0xB9C7BF) }
+    var arabicTile: Color { isDaytime ? Self.color(0xFFE9DF) : .clear }
+    var arabicText: Color { isDaytime ? Self.color(0x5A1F2E) : Self.color(0xFAF6EA) }
+    var transliterationTile: Color { isDaytime ? Self.color(0xF5EEFF) : .clear }
+    var transliterationText: Color { isDaytime ? Self.color(0x3E2F63) : Self.color(0xDDD7C7) }
+    var meaningTile: Color { isDaytime ? Self.color(0xF5EEFF) : .clear }
+    var meaningText: Color { isDaytime ? Self.color(0x3E2F63) : Self.color(0xDDD7C7) }
 
-    var counter: Color { isDaytime ? Self.color(0xD9466F) : Self.color(0xE2B04A) }
-    var counterText: Color { isDaytime ? Self.color(0xFFFFFF) : Self.color(0x241800) }
-    var smallButton: Color { isDaytime ? Self.color(0xFFE1E6) : Self.color(0x22362B) }
-    var smallButtonIcon: Color { isDaytime ? Self.color(0xA3304F) : Self.color(0x9FD8B3) }
+    var counter: Color { isDaytime ? Self.color(0xD9466F) : Self.color(0xD4AF37) }
+    var counterText: Color { isDaytime ? Self.color(0xFFFFFF) : Self.color(0x1E1600) }
+    var smallButton: Color { isDaytime ? Self.color(0xFFE1E6) : .clear }
+    var smallButtonIcon: Color { isDaytime ? Self.color(0xA3304F) : Self.color(0xE6C866) }
 
-    var navigationBar: Color { isDaytime ? Self.color(0xFFFFFF) : Self.color(0x161E1A) }
-    var tabBarSurround: Color { isDaytime ? Self.color(0xFFE7C2) : Self.color(0x0F1512) }
-    var activeTab: Color { isDaytime ? Self.color(0xD9466F) : Self.color(0xE2B04A) }
-    var inactiveTab: Color { isDaytime ? Self.color(0x7A6468) : Self.color(0x8A9A91) }
+    var navigationBar: Color { isDaytime ? Self.color(0xFFFFFF) : .clear }
+    var tabBarSurround: Color { isDaytime ? Self.color(0xFFE7C2) : .clear }
+    var activeTab: Color { isDaytime ? Self.color(0xD9466F) : Self.color(0xD4AF37) }
+    var inactiveTab: Color { isDaytime ? Self.color(0x7A6468) : Self.color(0xA8A08C) }
 }
 
 private struct AppPaletteKey: EnvironmentKey {
@@ -62,5 +72,21 @@ extension EnvironmentValues {
     var appPalette: AppPalette {
         get { self[AppPaletteKey.self] }
         set { self[AppPaletteKey.self] = newValue }
+    }
+}
+
+extension View {
+    func appGlassBackground<S: Shape>(
+        _ fill: Color,
+        in shape: S,
+        palette: AppPalette
+    ) -> some View {
+        background {
+            if palette.isDaytime {
+                shape.fill(fill)
+            } else {
+                shape.fill(.ultraThinMaterial)
+            }
+        }
     }
 }

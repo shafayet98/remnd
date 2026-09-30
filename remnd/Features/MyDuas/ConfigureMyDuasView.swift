@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ConfigureMyDuasView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.appPalette) private var palette
 
     @State private var draftUserDuas: [UserDua]
     private let savedUserDuas: [UserDua]
@@ -34,6 +35,12 @@ struct ConfigureMyDuasView: View {
                 sectionTitle: "Your Duas",
                 baselineUserDuas: savedUserDuas
             )
+            .scrollContentBackground(.hidden)
+            .background {
+                Rectangle()
+                    .fill(palette.background)
+                    .ignoresSafeArea()
+            }
             .navigationTitle("Configure")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

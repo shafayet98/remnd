@@ -51,15 +51,31 @@ final class AppDataStore: ObservableObject {
 
     private let defaults: UserDefaults?
     private let calendar: Calendar
-    private let storageKey = "remnd.appData.v1"
+    private let storageKey: String
+    private static let legacyStorageKey = "remnd.appData.v1"
+    private static let legacyOwnerKey = "remnd.appData.legacyOwner"
 
     init(
+        appleUserID: String? = nil,
         defaults: UserDefaults? = .standard,
         now: Date = .now,
         calendar: Calendar = .autoupdatingCurrent
     ) {
         self.defaults = defaults
         self.calendar = calendar
+        let storageKey = appleUserID.map { "remnd.appData.apple.\($0)" }
+            ?? Self.legacyStorageKey
+        self.storageKey = storageKey
+
+        // Claim existing on-device data for the first Apple account used here.
+        if let appleUserID, let defaults,
+           defaults.string(forKey: Self.legacyOwnerKey) == nil {
+            if defaults.data(forKey: storageKey) == nil,
+               let legacyData = defaults.data(forKey: Self.legacyStorageKey) {
+                defaults.set(legacyData, forKey: storageKey)
+            }
+            defaults.set(appleUserID, forKey: Self.legacyOwnerKey)
+        }
 
         let saved = defaults?.data(forKey: storageKey)
             .flatMap { try? JSONDecoder().decode(SavedAppData.self, from: $0) }

@@ -20,6 +20,7 @@ struct MyDuasView: View {
     // Swipe state
     @State private var dragOffset: CGSize = .zero
     @State private var isAnimatingSwipe = false
+    @State private var isShowingTopCardDetails = false
 
     // Configuration state
     @State private var showingConfigure = false
@@ -61,6 +62,9 @@ struct MyDuasView: View {
                     .fill(palette.background)
                     .ignoresSafeArea()
             )
+            .onChange(of: cards.first?.id) { _, _ in
+                isShowingTopCardDetails = false
+            }
 
             // Configuration sheet
             .sheet(
@@ -177,8 +181,11 @@ struct MyDuasView: View {
 
         return DuaCardView(
             dua: card.dua,
-            countLeft: countLeft
+            countLeft: countLeft,
+            onFlipChange: isTopCard ? { isShowingTopCardDetails = $0 } : nil
         )
+        .opacity(isTopCard || !isShowingTopCardDetails ? 1 : 0)
+        .animation(.easeOut(duration: 0.16), value: isShowingTopCardDetails)
         .scaleEffect(scale)
         .offset(
             x: xOffset,

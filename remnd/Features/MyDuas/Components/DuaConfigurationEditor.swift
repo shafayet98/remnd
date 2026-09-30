@@ -2,6 +2,9 @@ import SwiftUI
 
 struct DuaConfigurationEditor: View {
     @Environment(\.appPalette) private var palette
+    #if DEBUG
+    @AppStorage("remnd.debugPreviewNightTheme") private var previewNightTheme = false
+    #endif
     @Binding var userDuas: [UserDua]
 
     let duas: [Dua]
@@ -28,6 +31,7 @@ struct DuaConfigurationEditor: View {
                     HStack(spacing: 12) {
                         Text(title(for: userDua.duaID))
                             .font(.body)
+                            .foregroundStyle(palette.isDaytime ? Color.primary : palette.primaryText)
 
                         Spacer()
 
@@ -47,6 +51,7 @@ struct DuaConfigurationEditor: View {
                         .fixedSize(horizontal: true, vertical: false)
                     }
                     .padding(.vertical, 12)
+                    .listRowBackground(palette.card)
                 }
                 .onMove(perform: moveDua)
                 .onDelete(perform: deleteDua)
@@ -60,7 +65,7 @@ struct DuaConfigurationEditor: View {
                             .foregroundStyle(palette.activeTab)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 8)
-                            .background(palette.smallButton, in: Capsule())
+                            .appGlassBackground(palette.smallButton, in: Capsule(), palette: palette)
                             .buttonStyle(.plain)
                     }
                 }
@@ -92,9 +97,25 @@ struct DuaConfigurationEditor: View {
                     totalCardsRow
                 }
             }
+
+            #if DEBUG
+            if showsActionButtons {
+                Section {
+                    Toggle("Preview night theme", isOn: $previewNightTheme)
+                        .foregroundStyle(palette.primaryText)
+                        .tint(palette.activeTab)
+                        .listRowBackground(palette.card)
+                } header: {
+                    Text("Appearance Preview")
+                } footer: {
+                    Text("Turn this off to follow your local time again.")
+                }
+            }
+            #endif
         }
         .listStyle(.insetGrouped)
         .listSectionSpacing(0)
+        .tint(palette.activeTab)
     }
 
     private func title(for duaID: String) -> String {
@@ -127,7 +148,7 @@ struct DuaConfigurationEditor: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 14)
         .frame(maxWidth: .infinity)
-        .background(palette.card, in: Capsule())
+        .appGlassBackground(palette.card, in: Capsule(), palette: palette)
     }
 
     private func configurationSignature(_ values: [UserDua]) -> String {

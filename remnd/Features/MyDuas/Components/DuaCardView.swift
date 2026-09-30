@@ -12,6 +12,7 @@ struct DuaCardView: View {
 
     let dua: Dua
     let countLeft: Int
+    var onFlipChange: ((Bool) -> Void)? = nil
 
     private enum InfoSection: Hashable {
         case benefit
@@ -24,22 +25,14 @@ struct DuaCardView: View {
     private let cardShape = RoundedRectangle(cornerRadius: 28)
 
     var body: some View {
-        ZStack {
-            frontFace
-                .opacity(isShowingBenefit ? 0 : 1)
-                .allowsHitTesting(!isShowingBenefit)
-
-            benefitFace
-                .rotation3DEffect(
-                    .degrees(180),
-                    axis: (x: 0, y: 1, z: 0)
-                )
-                .opacity(isShowingBenefit ? 1 : 0)
-                .allowsHitTesting(isShowingBenefit)
-        }
+        FlipFaceSwitcher(
+            angle: isShowingBenefit ? 180 : 0,
+            front: frontFace,
+            back: benefitFace
+        )
         .frame(maxWidth: .infinity)
         .frame(maxHeight: .infinity)
-        .background(cardShape.fill(palette.card))
+        .appGlassBackground(palette.card, in: cardShape, palette: palette)
         .clipShape(cardShape)
         .overlay {
             cardShape.strokeBorder(palette.cardBorder, lineWidth: 1.25)
@@ -160,12 +153,19 @@ struct DuaCardView: View {
             Button {
                 withAnimation(.easeInOut(duration: 0.6)) {
                     isShowingBenefit = false
+                } completion: {
+                    onFlipChange?(false)
                 }
             } label: {
                 Image(systemName: "arrow.uturn.backward")
                     .font(.title3.weight(.medium))
                     .frame(width: 56, height: 56)
-                    .background(palette.smallButton, in: Capsule())
+                    .appGlassBackground(palette.smallButton, in: Capsule(), palette: palette)
+                    .overlay {
+                        if !palette.isDaytime {
+                            Capsule().strokeBorder(palette.cardBorder, lineWidth: 1)
+                        }
+                    }
                     .foregroundStyle(palette.smallButtonIcon)
             }
             .buttonStyle(.plain)
@@ -185,7 +185,12 @@ struct DuaCardView: View {
                 .font(.title3.weight(.medium))
                 .foregroundStyle(palette.smallButtonIcon)
                 .frame(width: 56, height: 56)
-                .background(background, in: Capsule())
+                .appGlassBackground(background, in: Capsule(), palette: palette)
+                .overlay {
+                    if !palette.isDaytime {
+                        Capsule().strokeBorder(palette.cardBorder, lineWidth: 1)
+                    }
+                }
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -194,6 +199,7 @@ struct DuaCardView: View {
 
     private func showInfoSection(_ section: InfoSection) {
         selectedInfoSection = section
+        onFlipChange?(true)
         withAnimation(.easeInOut(duration: 0.6)) {
             isShowingBenefit = true
         }
@@ -217,7 +223,11 @@ struct DuaCardView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(20)
-        .background(background, in: RoundedRectangle(cornerRadius: 24))
+        .appGlassBackground(
+            background,
+            in: RoundedRectangle(cornerRadius: 24),
+            palette: palette
+        )
     }
 
     private func scrollableTile<Content: View>(
@@ -234,7 +244,43 @@ struct DuaCardView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(background, in: RoundedRectangle(cornerRadius: 18))
+        .appGlassBackground(
+            background,
+            in: RoundedRectangle(cornerRadius: 18),
+            palette: palette
+        )
+        .overlay {
+            if !palette.isDaytime {
+                RoundedRectangle(cornerRadius: 18)
+                    .strokeBorder(palette.cardBorder, lineWidth: 1)
+            }
+        }
+    }
+}
+
+private struct FlipFaceSwitcher<Front: View, Back: View>: View, Animatable {
+    var angle: Double
+    let front: Front
+    let back: Back
+
+    var animatableData: Double {
+        get { angle }
+        set { angle = newValue }
+    }
+
+    var body: some View {
+        ZStack {
+            front
+                .opacity(angle < 90 ? 1 : 0)
+                .transaction { $0.animation = nil }
+                .allowsHitTesting(angle < 90)
+
+            back
+                .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
+                .opacity(angle >= 90 ? 1 : 0)
+                .transaction { $0.animation = nil }
+                .allowsHitTesting(angle >= 90)
+        }
     }
 }
 
@@ -250,4 +296,25 @@ struct DuaCardView: View {
         )
         .padding(24)
     }
+}
+
+#Preview("Night Dua Card") {
+    let night = Calendar.autoupdatingCurrent.date(
+        bySettingHour: 22,
+        minute: 0,
+        second: 0,
+        of: .now
+    ) ?? .now
+    let palette = AppPalette(date: night)
+
+    ZStack {
+        Rectangle()
+            .fill(palette.background)
+            .ignoresSafeArea()
+
+        DuaCardView(dua: MockData.duas[0], countLeft: 1)
+            .padding(24)
+    }
+    .environment(\.appPalette, palette)
+    .environment(\.colorScheme, .dark)
 }

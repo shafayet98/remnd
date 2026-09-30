@@ -59,7 +59,11 @@ struct DuaDetailView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
-        .background(palette.card, in: RoundedRectangle(cornerRadius: 18))
+        .appGlassBackground(
+            palette.card,
+            in: RoundedRectangle(cornerRadius: 18),
+            palette: palette
+        )
         .overlay {
             RoundedRectangle(cornerRadius: 18)
                 .strokeBorder(palette.cardBorder, lineWidth: 1)

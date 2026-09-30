@@ -74,7 +74,7 @@ struct NewDuaView: View {
                         .padding(.vertical, 15)
                 }
                 .foregroundStyle(palette.smallButtonIcon)
-                .background(palette.smallButton, in: Capsule())
+                .appGlassBackground(palette.smallButton, in: Capsule(), palette: palette)
                 .disabled(!canSubmit)
                 .opacity(canSubmit ? 1 : 0.5)
 
@@ -114,11 +114,19 @@ struct NewDuaView: View {
             content()
                 .foregroundStyle(palette.primaryText)
                 .padding(10)
-                .background(palette.smallButton.opacity(0.4), in: RoundedRectangle(cornerRadius: 12))
+                .appGlassBackground(
+                    palette.smallButton.opacity(0.4),
+                    in: RoundedRectangle(cornerRadius: 12),
+                    palette: palette
+                )
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(palette.card, in: RoundedRectangle(cornerRadius: 20))
+        .appGlassBackground(
+            palette.card,
+            in: RoundedRectangle(cornerRadius: 20),
+            palette: palette
+        )
     }
 
     private func trimmed(_ value: String) -> String {
